@@ -1,0 +1,7 @@
+{
+  "name": "Achieve.UniCodex.Editor",
+  "rootNamespace": "Achieve.UniCodex",
+  "includePlatforms": [
+    "Editor"
+  ]
+}
