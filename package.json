@@ -1,10 +1,12 @@
 {
   "name": "com.achieve.uni-codex",
   "displayName": "UniCodex",
-  "author": "Achieveone",
+  "author": {
+    "name": "Achieveone"
+  },
   "version": "1.0.0",
-  "unity": "2022.3",
-  "description": "Unity에서 Codex를 사용할 수 있도록 합니다.",
+  "unity": "6000.3",
+  "description": "Unity\uc5d0\uc11c Codex\ub97c \uc0ac\uc6a9\ud560 \uc218 \uc788\ub3c4\ub85d \ud569\ub2c8\ub2e4.",
   "keywords": [
     "AI",
     "Codex"

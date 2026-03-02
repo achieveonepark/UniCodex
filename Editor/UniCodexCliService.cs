@@ -5,13 +5,13 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Achieve.UniCodex
+namespace Achieve.UniCodex.Editor
 {
     /// <summary>
-    /// Thin service wrapper around Codex CLI commands.
-    /// Handles install/login checks and chat execution.
+    /// Codex CLI 명령 실행을 감싸는 서비스 래퍼입니다.
+    /// 설치/로그인 상태 확인과 채팅 실행을 담당합니다.
     /// </summary>
-    internal sealed class CodexCliService
+    internal sealed class UniCodexCliService
     {
         private static readonly Regex ThreadRegex = new Regex("\"thread_id\":\"([^\"]+)\"", RegexOptions.Compiled);
         private static readonly Regex JsonMessageRegex = new Regex("\"message\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
@@ -36,25 +36,40 @@ namespace Achieve.UniCodex
         private readonly bool _useProjectCodexHome;
         private readonly string _projectCodexHome;
         private readonly bool _fullAuto;
+        private readonly string _model;
+        private readonly string _modelReasoningEffort;
         private readonly int _execTimeoutMs;
 
-        public CodexCliService(string cliPath, string workingDirectory, bool useProjectCodexHome, string projectCodexHome, bool fullAuto, int execTimeoutMs = CodexCliConstants.DefaultExecTimeoutMs)
+        /// <summary>
+        /// 지정한 프로젝트 컨텍스트로 Codex CLI 서비스 인스턴스를 생성합니다.
+        /// </summary>
+        public UniCodexCliService(
+            string cliPath,
+            string workingDirectory,
+            bool useProjectCodexHome,
+            string projectCodexHome,
+            bool fullAuto,
+            string model = null,
+            string modelReasoningEffort = null,
+            int execTimeoutMs = UniCodexCliConstants.DefaultExecTimeoutMs)
         {
-            _cliPath = string.IsNullOrWhiteSpace(cliPath) ? CodexCliConstants.DefaultCliPath : cliPath.Trim();
+            _cliPath = string.IsNullOrWhiteSpace(cliPath) ? UniCodexCliConstants.DefaultCliPath : cliPath.Trim();
             _workingDirectory = workingDirectory;
             _useProjectCodexHome = useProjectCodexHome;
             _projectCodexHome = projectCodexHome;
             _fullAuto = fullAuto;
+            _model = string.IsNullOrWhiteSpace(model) ? string.Empty : model.Trim();
+            _modelReasoningEffort = string.IsNullOrWhiteSpace(modelReasoningEffort) ? string.Empty : modelReasoningEffort.Trim();
             // Keep non-positive values as "no timeout".
             _execTimeoutMs = execTimeoutMs;
         }
 
         /// <summary>
-        /// Resolve installation + version and then query login status.
+        /// 설치 상태와 버전을 확인한 뒤 로그인 상태를 조회합니다.
         /// </summary>
-        public EnvironmentState RefreshEnvironmentState()
+        public UniCodexEnvironmentState RefreshEnvironmentState()
         {
-            var state = new EnvironmentState();
+            var state = new UniCodexEnvironmentState();
             state.Installed = ResolveCliPathAndVersion(out state.VersionText, out state.ResolvedCliPath);
             if (!state.Installed)
             {
@@ -68,32 +83,25 @@ namespace Achieve.UniCodex
         }
 
         /// <summary>
-        /// Query login state only.
+        /// 로그인 상태만 조회합니다.
         /// </summary>
-        public CommandResult QueryLoginStatus()
+        public UniCodexCommandResult QueryLoginStatus()
         {
             var loggedIn = TryQueryLoginStatus(out var loginText);
-            return new CommandResult
+            return new UniCodexCommandResult
             {
                 Success = loggedIn,
                 Message = loginText
             };
         }
 
-        public CommandResult LoginWithDeviceAuth()
+        /// <summary>
+        /// Codex CLI의 디바이스 인증 로그인 플로우를 시작합니다.
+        /// </summary>
+        public UniCodexCommandResult LoginWithDeviceAuth()
         {
             var success = TryRunCodexCommand("login --device-auth", null, 240000, out var exitCode, out var output);
-            return new CommandResult
-            {
-                Success = success && exitCode == 0,
-                Message = output
-            };
-        }
-
-        public CommandResult Logout()
-        {
-            var success = TryRunCodexCommand("logout", null, 10000, out var exitCode, out var output);
-            return new CommandResult
+            return new UniCodexCommandResult
             {
                 Success = success && exitCode == 0,
                 Message = output
@@ -101,16 +109,31 @@ namespace Achieve.UniCodex
         }
 
         /// <summary>
-        /// Execute a chat turn via `codex exec` and parse output metadata.
+        /// 현재 Codex CLI 사용자를 로그아웃합니다.
         /// </summary>
-        public CodexRunResult Run(string prompt, string sessionId, Action<string> progressCallback = null)
+        public UniCodexCommandResult Logout()
         {
-            var request = new CodexRunRequest
+            var success = TryRunCodexCommand("logout", null, 10000, out var exitCode, out var output);
+            return new UniCodexCommandResult
+            {
+                Success = success && exitCode == 0,
+                Message = output
+            };
+        }
+
+        /// <summary>
+        /// <c>codex exec</c>로 한 턴을 실행하고 출력 메타데이터를 파싱합니다.
+        /// </summary>
+        public UniCodexRunResult Run(string prompt, string sessionId, Action<string> progressCallback = null)
+        {
+            var request = new UniCodexRunRequest
             {
                 CliPath = _cliPath,
                 WorkingDirectory = _workingDirectory,
                 Prompt = prompt,
                 SessionId = string.IsNullOrWhiteSpace(sessionId) ? string.Empty : sessionId,
+                Model = _model,
+                ModelReasoningEffort = _modelReasoningEffort,
                 UseProjectCodexHome = _useProjectCodexHome,
                 ProjectCodexHome = _projectCodexHome,
                 FullAuto = _fullAuto,
@@ -120,7 +143,10 @@ namespace Achieve.UniCodex
             return RunCodex(request, progressCallback);
         }
 
-        public static string BuildTokenSummary(CodexRunResult result)
+        /// <summary>
+        /// 실행 결과에서 토큰 사용량 요약 문자열을 생성합니다.
+        /// </summary>
+        public static string BuildTokenSummary(UniCodexRunResult result)
         {
             if (result == null)
             {
@@ -156,9 +182,9 @@ namespace Achieve.UniCodex
                 candidates.Add(_cliPath.Trim());
             }
 
-            for (var i = 0; i < CodexCliConstants.CliCandidates.Length; i++)
+            for (var i = 0; i < UniCodexCliConstants.CliCandidates.Length; i++)
             {
-                var candidate = CodexCliConstants.CliCandidates[i];
+                var candidate = UniCodexCliConstants.CliCandidates[i];
                 if (!candidates.Contains(candidate))
                 {
                     candidates.Add(candidate);
@@ -297,7 +323,7 @@ namespace Achieve.UniCodex
             }
         }
 
-        private static CodexRunResult RunCodex(CodexRunRequest request, Action<string> progressCallback)
+        private static UniCodexRunResult RunCodex(UniCodexRunRequest request, Action<string> progressCallback)
         {
             var outputFile = Path.Combine(Path.GetTempPath(), $"codex-last-{Guid.NewGuid():N}.txt");
             try
@@ -400,7 +426,7 @@ namespace Achieve.UniCodex
                     var timedOutThreadId = ExtractThreadId(timedOutCombined);
                     ExtractTokenUsage(timedOutCombined, out var timeoutInputTokens, out var timeoutOutputTokens, out var timeoutTotalTokens);
 
-                    return new CodexRunResult
+                    return new UniCodexRunResult
                     {
                         Success = false,
                         Message = $"codex execution timed out after {timeoutMs / 1000}s.",
@@ -444,7 +470,7 @@ namespace Achieve.UniCodex
                     reply = ExtractErrorMessage(combined);
                 }
 
-                return new CodexRunResult
+                return new UniCodexRunResult
                 {
                     Success = success,
                     Message = string.IsNullOrWhiteSpace(reply) ? "No response from codex CLI." : reply,
@@ -456,7 +482,7 @@ namespace Achieve.UniCodex
             }
             catch (Exception ex)
             {
-                return CodexRunResult.FromError($"codex execution failed: {ex.Message}");
+                return UniCodexRunResult.FromError($"codex execution failed: {ex.Message}");
             }
             finally
             {
@@ -474,7 +500,7 @@ namespace Achieve.UniCodex
             }
         }
 
-        private static string BuildCodexArguments(CodexRunRequest request, string outputFile)
+        private static string BuildCodexArguments(UniCodexRunRequest request, string outputFile)
         {
             var sb = new StringBuilder();
             sb.Append("exec ");
@@ -486,6 +512,18 @@ namespace Achieve.UniCodex
             }
 
             sb.Append("--json ");
+            if (!string.IsNullOrWhiteSpace(request.Model))
+            {
+                sb.Append("--model ").Append(EscapeArg(request.Model)).Append(' ');
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.ModelReasoningEffort))
+            {
+                sb.Append("-c ")
+                    .Append(EscapeArg($"model_reasoning_effort={request.ModelReasoningEffort}"))
+                    .Append(' ');
+            }
+
             sb.Append("--skip-git-repo-check ");
             sb.Append("--output-last-message ").Append(EscapeArg(outputFile)).Append(' ');
 

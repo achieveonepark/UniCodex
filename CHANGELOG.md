@@ -17,10 +17,17 @@
 - `@mention` 파일 자동완성과 타겟 파일 컨텍스트 첨부 기능 추가
 - 세션 토큰 사용량 추적 및 원형 토큰 게이지 UI 추가
 - Unity Action Bridge 추가 (`Library/CodexUnityActions.json`)
-- 지원 액션: `AddComponent`, `RemoveComponent`, `CreateSpriteObject`
+- 지원 액션: `AddComponent`, `RemoveComponent`, `CreateSpriteObject`, `SavePrefabFromTarget`, `CreateCsvDataTable`
 - Unity Helper 메뉴 추가: `Tools/Codex/Unity Helper/Apply Pending Actions`
 - Unity Helper 메뉴 추가: `Tools/Codex/Unity Helper/Write Action Template`
+- Unity Helper 메뉴 추가: `Tools/Codex/Unity Helper/Write CSV Table Template`
+- Unity Helper 메뉴 추가: `Tools/Codex/Unity Helper/Open Generated Prefab Folder`
 - Unity 메인 툴바 플레이 영역 단축 버튼 자동 주입 및 재설치 메뉴 추가
 - Codex CLI 래퍼 서비스 추가(경로 탐색/버전 확인, `codex exec --json` 실행, thread resume)
 - Codex CLI 출력에서 진행 상태(progress) 메시지 파싱 추가
 - Codex CLI 출력에서 토큰 사용량(input/output/total) 추출 추가
+- Runtime CSV 파서/로더 추가: `UniCodexCsvDataTableProvider`
+- Runtime 코어 파사드 추가: `UniCodex.Data`, `UniCodex.Client`
+- Runtime 백엔드 프록시 클라이언트 추가: `UniCodexBackendProxyClient`, `IUniCodexBackendGateway`
+- Editor 실행 경로를 `UniCodex.Client` 계약과 연결(어댑터 기반)
+- 모바일/런타임 로그인 방식 명시: 백엔드 세션 토큰 기반 로그인

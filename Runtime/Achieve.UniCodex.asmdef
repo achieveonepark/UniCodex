@@ -1,11 +1,9 @@
 {
     "name": "Achieve.UniCodex",
-    "rootNamespace": "",
+    "rootNamespace": "Achieve.UniCodex",
     "references": [],
     "includePlatforms": [],
-    "excludePlatforms": [
-        "Editor"
-    ],
+    "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],

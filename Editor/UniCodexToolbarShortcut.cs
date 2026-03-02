@@ -5,13 +5,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Achieve.UniCodex
+namespace Achieve.UniCodex.Editor
 {
     /// <summary>
     /// Injects a small shortcut button into the Unity main toolbar (left of play controls).
     /// </summary>
     [InitializeOnLoad]
-    internal static class CodexToolbarShortcut
+    internal static class UniCodexToolbarShortcut
     {
         private const string ToolbarTypeName = "UnityEditor.Toolbar, UnityEditor";
         private const string GUIViewTypeName = "UnityEditor.GUIView, UnityEditor";
@@ -41,7 +41,7 @@ namespace Achieve.UniCodex
         private static int _cachedToolbarId;
         private static ShortcutStatus _shortcutStatus = ShortcutStatus.Ready;
 
-        static CodexToolbarShortcut()
+        static UniCodexToolbarShortcut()
         {
             EditorApplication.update -= EnsureShortcutInstalled;
             EditorApplication.update += EnsureShortcutInstalled;
@@ -399,7 +399,7 @@ namespace Achieve.UniCodex
                 SetReadyState();
             }
 
-            CodexChatWindow.OpenWindow();
+            UniCodexChatWindow.OpenWindow();
         }
 
         private static void ApplyShortcutVisual(Button button)

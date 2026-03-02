@@ -1,25 +1,32 @@
 # UniCodex
 
 Unity Editor에서 Codex CLI를 채팅 기반으로 연결해 코드 작업과 Diff 적용을 지원하는 에디터 패키지입니다.
+Codex 클라이언트에 인증(Device Auth)한 뒤 에디터 안에서 바로 대화를 이어갈 수 있도록 구성되어 있으며,
+Unity 컴포넌트/오브젝트를 접근해 수정할 수 있도록 Action Bridge를 커스텀화했습니다.
 
 ## 핵심 기능
 
 - `Tools/Codex/Codex Chat` 에디터 창 제공
-- Codex 설치/로그인 상태 확인, Device Auth 로그인, 로그아웃
+- Codex 클라이언트 설치/인증 상태 확인, Device Auth 로그인, 로그아웃
 - `Plan` / `Build` 모드 전환
 - Build 모드 `Diff On` 시 변경안을 Unified Diff로 미리보기 후 적용
 - Diff 미리보기 창에서 파일별 탭, 라인별 색상 렌더링, `Apply` / `Refine` 지원
 - 다중 채팅 세션(세션 생성, 전환, 이력 보존)
 - `@파일경로` 멘션 기반 타겟 파일 컨텍스트 첨부(`Assets/`, `Packages/`)
 - 세션 토큰 사용량 표시(원형 게이지 + in/out/total 요약)
-- Unity Action Bridge(JSON 파일 기반): 씬/오브젝트 작업 자동 적용
+- Unity Action Bridge(JSON 파일 기반): 씬/오브젝트/컴포넌트 접근 및 수정 작업 자동 적용
 - Unity 메인 툴바(Play 버튼 영역) 단축 버튼 자동 주입
+- Runtime 코어 파사드 제공: `UniCodex.Data.*`, `UniCodex.Client.*`
 
 ## 요구 사항
 
 - Unity `2022.3` 이상
 - Codex CLI 설치
 - Codex 계정 로그인 상태
+
+모바일/런타임 클라이언트 연동 시:
+- 백엔드 프록시(인증/실행 API) 준비
+- 앱 로그인 후 백엔드 세션 토큰을 `UniCodex.Client.LoginAsync`에 전달
 
 ## 설치
 
@@ -56,6 +63,36 @@ https://github.com/achieveonepark/unicodex.git#1.0.0
 - `Plan`: 분석/설계 중심 응답 유도
 - `Build`: 구현 중심 응답 유도
 - `Diff On` (Build 전용): 실제 파일 쓰기 대신 Unified Diff 생성을 요청하며, 응답은 Diff Preview 창에서 파일 단위 탭으로 분리 표시
+
+## 로그인 방식 (Editor / Mobile)
+
+- Editor: `codex login --device-auth` 기반 로그인 (`Login (Device)` 버튼)
+- Mobile/Runtime: CLI 직접 로그인 불가, 백엔드 세션 토큰 기반 로그인 사용
+
+```csharp
+using Achieve.UniCodex;
+
+// 백엔드 게이트웨이 구현체를 주입
+UniCodex.ConfigureClient(new UniCodexBackendProxyClient(myGateway));
+
+await UniCodex.Client.LoginAsync(new UniCodexLoginRequest
+{
+    BackendSessionToken = sessionToken
+});
+```
+
+## Runtime API 예시
+
+```csharp
+using Achieve.UniCodex;
+
+// CSV 데이터테이블 로드
+var enemyTable = UniCodex.Data.LoadCsv("EnemyStats");
+if (enemyTable.TryGetRow("slime_001", out var row))
+{
+    var hp = row.GetInt("hp", 0);
+}
+```
 
 ## Diff Preview
 

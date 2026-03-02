@@ -1,6 +1,9 @@
 {
   "name": "Achieve.UniCodex.Editor",
-  "rootNamespace": "Achieve.UniCodex",
+  "rootNamespace": "Achieve.UniCodex.Editor",
+  "references": [
+    "Achieve.UniCodex"
+  ],
   "includePlatforms": [
     "Editor"
   ]
